@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include "structs.h"
 #include "io.h"
+#include "algorithms.h"
 
 int main(int argc, char** argv) {
   // Initialize the MPI environment. The two arguments to MPI Init are not
@@ -29,10 +30,13 @@ int main(int argc, char** argv) {
 
   // READER/MASTER procedure
   if(world_rank == 0){
-    Query** queries;
+    QueryList* queries;
     queries = readQueries("Entrada.in");
 
+    
+
     // por cada tarea
+    
     /*
       Buscar resultado en cache
     */
@@ -64,7 +68,7 @@ int main(int argc, char** argv) {
       */
     }
   }
-
+cd 
 
   // Finalize the MPI environment. No more MPI calls can be made after this
   MPI_Finalize();
