@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "structs.h"
@@ -5,7 +6,7 @@
 // QUERY
 
 // Crea nueva query
-Query* newQuery(char* uuid, int algorithm, char* param){
+Query* newQuery(char* uuid, int algorithm, long param){
   Query* query;
 
   query = (Query*) malloc(sizeof(Query));
@@ -21,7 +22,6 @@ Query* newQuery(char* uuid, int algorithm, char* param){
 // Libera query
 void freeQuery(Query* query){
   free(query->uuid);
-  free(query->param);
   free(query->result);
   free(query);
   return;
@@ -51,8 +51,11 @@ QueryList* newQueryList(Query* data){
 }
 
 QueryList* AddQueryToList(QueryList* list, Query* data){
-  list->last->next = data;
-  list->last = data;
+  QueryListNode* node = (QueryListNode*)malloc(sizeof(QueryListNode));
+	node->data = data;
+	node->next = NULL;
+  list->last->next = node;
+  list->last = node;
   return list;
 }
 
@@ -77,11 +80,16 @@ Query* getUnassignedQuery(QueryList* list){
 
 	aux = list->first;
 	while(aux != NULL){
+    if(aux->data->result != NULL){
+      aux = aux->next;
+      continue;
+    }
+
     age = getQueryAge(aux->data);
 
     if(age==-1){
       return aux->data;
-    }else if(age > 3 && (candidate == NULL || getQueryAge(candidate) < age)){
+    }else if(candidate == NULL || getQueryAge(candidate) < age){
       candidate = aux->data;
     }
 		aux = aux->next;
@@ -106,16 +114,34 @@ Query* getQueryByUUID(QueryList* list, char* uuid){
 
 void setQueriesResult(QueryList* list, long param, char* result){
   QueryListNode *aux;
-	if(list == NULL) return NULL;
+	if(list == NULL) return;
 
 	aux = list->first;
 	while(aux != NULL){
     if( aux->data->param == param && aux->data->result == NULL){
       aux->data->result = result;
+      return;
     }
 		aux = aux->next;
 	}
-  return NULL;
+  return;
+}
+
+void printQueries(QueryList* list){
+  QueryListNode *aux;
+	if(list == NULL) return;
+
+	aux = list->first;
+	while(aux != NULL){
+    printf("%s %i %ld %s\n",
+    aux->data->uuid,
+    aux->data->algorithm,
+    aux->data->param,
+    aux->data->result);
+
+    aux=aux->next;
+	}
+  return;
 }
 
 
@@ -155,7 +181,8 @@ Cache* saveResult(Cache* cache, long query, char* result){
   if(cache == NULL) return NULL;
 
   int size = cache->size;
-  int lfu_index, lfu_hits = -1; 
+  int lfu_index; 
+  int lfu_hits = -1; 
   int lru_index;
   time_t lru_time = -1;
 
@@ -174,19 +201,34 @@ Cache* saveResult(Cache* cache, long query, char* result){
 
     if(lfu_hits == -1 || cache->entries[i].hits < lfu_hits){
       lfu_index = i;
+      lfu_hits = cache->entries[i].hits;
     }
 
     if(lru_time == -1 || cache->entries[i].last_hit_at < lru_time){
       lru_index = i;
+      lru_time = cache->entries[i].last_hit_at;
     }
-
   }
 
-  i = lru_index; // cambiar por lfu_index para comparar performance
+  i = lfu_index; // cambiar por lfu_index para comparar performance
   cache->entries[i].query = query;
   cache->entries[i].result = result;
   cache->entries[i].hits = 1;
   cache->entries[i].last_hit_at = time(NULL);
 
   return cache;  
+}
+
+void printCache(Cache* cache){
+  int size = cache->size;
+  
+  int i;
+  CacheEntry entry;
+  printf("---***CACHE***---\n");
+  for(i=0;i<size;i++){
+    entry = cache->entries[i];
+    printf("query:%ld result:%s hits:%i\n",entry.query,entry.result,entry.hits);
+  }
+  printf("---***END CACHE***---\n");
+
 }

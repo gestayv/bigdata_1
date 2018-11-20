@@ -10,7 +10,4 @@ char* euler(long n);
 // Recibe el numero atomico de un elemento, retorna un string con la configuracion electronica
 char* electronConfiguration(int atomicNumber);
 
-// Utils
-int getAtomicNumber(char* element);
-
 #endif

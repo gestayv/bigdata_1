@@ -15,7 +15,7 @@ def generate(n):
     algId = random.choice(algList)
     
     if algId == '1':
-      l = random.randint(2,19)
+      l = random.randint(2,18)
       params = random.choice(numbers)
       params += ''.join(random.choices(numbers0, k=l-1))
     elif algId == '2':
@@ -26,4 +26,4 @@ def generate(n):
     entrada.write(','.join([UUID,algId,params+'\n']))
   entrada.close()
   
-generate(100)
+generate(10000)
