@@ -16,7 +16,6 @@ void freeQuery(Query* query); // Libera query
 double getQueryAge(Query* query); // Segundos desde que fue despachado, -1 si esta en cola
 void setQueryDispatch(Query* query); // Setear query como despachada
 
-
 // Lista de queries
 typedef struct ProtoList{
 	Query* data;
@@ -32,6 +31,8 @@ QueryList* newQueryList(Query* data);
 QueryList* AddQueryToList(QueryList* list, Query* data);
 void freeQueryList(QueryList* list);
 Query* getUnassignedQuery(QueryList* list);
+Query* getQueryByUUID(QueryList* list, char* uuid);
+void setQueriesResult(QueryList*, long param, char* result);
 
 
 // CACHE

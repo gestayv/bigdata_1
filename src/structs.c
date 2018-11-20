@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 #include "structs.h"
 
 // QUERY
@@ -36,7 +37,6 @@ double getQueryAge(Query* query){
 void setQueryDispatch(Query* query){
   query->dispatched_at = time(NULL);
 }
-
 
 // QUERYLIST
 
@@ -87,6 +87,35 @@ Query* getUnassignedQuery(QueryList* list){
 		aux = aux->next;
 	}
   return candidate;
+}
+
+
+Query* getQueryByUUID(QueryList* list, char* uuid){
+  QueryListNode *aux;
+	if(list == NULL) return NULL;
+
+	aux = list->first;
+	while(aux != NULL){
+    if( strcmp(aux->data->uuid, uuid) == 0 ){
+      return aux->data;
+    }
+		aux = aux->next;
+	}
+  return NULL;
+}
+
+void setQueriesResult(QueryList* list, long param, char* result){
+  QueryListNode *aux;
+	if(list == NULL) return NULL;
+
+	aux = list->first;
+	while(aux != NULL){
+    if( aux->data->param == param && aux->data->result == NULL){
+      aux->data->result = result;
+    }
+		aux = aux->next;
+	}
+  return NULL;
 }
 
 
