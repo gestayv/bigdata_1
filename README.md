@@ -1,6 +1,6 @@
 # Compilación
 
-` mpicc -o exec main.c structs.c utils.c io.c algorithms.c `
+` mpicc -o exec main.c structs.c utils.c io.c algorithms.c -lm`
 
 # Ejecución
 
