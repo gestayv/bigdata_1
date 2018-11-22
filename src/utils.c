@@ -14,6 +14,12 @@ long getAtomicNumber(char* element){
   return -1l;
 }
 
+char* getElement(long number){
+  char* element = (char*) malloc(3*sizeof(char));
+  strcpy(element,elements[number]);
+  return element;
+}
+
 long getLongFromString(char* str){
   if(isdigit(str[0])){
     return atol(str);

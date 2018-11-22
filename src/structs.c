@@ -146,13 +146,17 @@ void printQueries(QueryList* list){
 
 
 // CACHE
-Cache* newCache(int size){
+Cache* newCache(int size, char* eviction){
   Cache* cache = (Cache*) malloc(sizeof(Cache));
   cache->size = size;
+  cache->eviction = eviction;
   cache->entries = (CacheEntry*) malloc(size * sizeof(CacheEntry));
+  cache->hits = 0l;
+  cache->misses = 0l;
   
   int i;
   for (i=0; i<size; i++){
+    cache->entries[i].algorithm = -1;
     cache->entries[i].query = -1;
     cache->entries[i].result = NULL;
     cache->entries[i].hits = 0;
@@ -161,23 +165,27 @@ Cache* newCache(int size){
   return cache;
 }
 
-char* searchQuery(Cache* cache, long query){
+char* searchQuery(Cache* cache, int algorithm, long query){
   if(cache == NULL) return NULL;
 
   int size = cache->size;
+  CacheEntry entry;
 
   int i;
   for (i=0; i<size; i++){
-    if(cache->entries[i].query == query){
-      cache->entries[i].last_hit_at = time(NULL);
-      cache->entries[i].hits++;
-      return cache->entries[i].result;
+    entry = cache->entries[i]; 
+    if(entry.algorithm == algorithm && entry.query == query){
+      entry.last_hit_at = time(NULL);
+      entry.hits++;
+      cache->hits++;
+      return entry.result;
     }
   }
+  cache->misses++;
   return NULL;
 }
 
-Cache* saveResult(Cache* cache, long query, char* result){
+Cache* saveResult(Cache* cache, int algorithm, long query, char* result){
   if(cache == NULL) return NULL;
 
   int size = cache->size;
@@ -185,13 +193,18 @@ Cache* saveResult(Cache* cache, long query, char* result){
   int lfu_hits = -1; 
   int lru_index;
   time_t lru_time = -1;
+  int mru_index;
+  time_t mru_time = -1;
 
+  CacheEntry entry;
   int i;
   for (i=0; i<size; i++){
-    if(cache->entries[i].query == query){
+    entry = cache->entries[i];
+    if(entry.algorithm == algorithm && entry.query == query){
       return cache;
     }
-    if(cache->entries[i].query == -1){
+    if(entry.query == -1){
+      cache->entries[i].algorithm = algorithm;
       cache->entries[i].query = query;
       cache->entries[i].result = result;
       cache->entries[i].hits = 1;
@@ -199,18 +212,34 @@ Cache* saveResult(Cache* cache, long query, char* result){
       return cache;
     }
 
-    if(lfu_hits == -1 || cache->entries[i].hits < lfu_hits){
+    if(lfu_hits == -1 || entry.hits < lfu_hits){
       lfu_index = i;
-      lfu_hits = cache->entries[i].hits;
+      lfu_hits = entry.hits;
     }
 
-    if(lru_time == -1 || cache->entries[i].last_hit_at < lru_time){
+    if(lru_time == -1 || entry.last_hit_at < lru_time){
       lru_index = i;
-      lru_time = cache->entries[i].last_hit_at;
+      lru_time = entry.last_hit_at;
+    }
+
+    if(mru_time == -1 || entry.last_hit_at > mru_time){
+      mru_index = i;
+      mru_time = entry.last_hit_at;
     }
   }
 
-  i = lfu_index; // cambiar por lfu_index para comparar performance
+  char* eviction = cache->eviction;
+  if(!strcmp(eviction, "lfu")){
+    i = lfu_index;
+  }else if(!strcmp(eviction, "lru")){
+    i = lru_index;
+  }else if(!strcmp(eviction, "mru")){
+    i = mru_index;
+  }else{
+    i = lru_index;
+  }
+
+  cache->entries[i].algorithm = algorithm;
   cache->entries[i].query = query;
   cache->entries[i].result = result;
   cache->entries[i].hits = 1;
@@ -227,8 +256,14 @@ void printCache(Cache* cache){
   printf("---***CACHE***---\n");
   for(i=0;i<size;i++){
     entry = cache->entries[i];
-    printf("query:%ld result:%s hits:%i\n",entry.query,entry.result,entry.hits);
+    printf("alg:%i query:%ld result:%s hits:%i\n",entry.algorithm,entry.query,entry.result,entry.hits);
   }
+  long total = cache->hits+cache->misses;
+  printf("Politica:%s Hits:%ld Total:%ld PERFORMANCE:%lf\n",cache->eviction,cache->hits,total,((double)cache->hits)/total);
   printf("---***END CACHE***---\n");
+}
 
+void printCachePerformance(Cache* cache){
+  long total = cache->hits+cache->misses;
+  printf("Politica:%s Hits:%ld Total:%ld PERFORMANCE:%lf\%\n",cache->eviction,cache->hits,total,((double)cache->hits*100)/total);
 }

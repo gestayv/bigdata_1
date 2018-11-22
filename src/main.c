@@ -28,9 +28,9 @@ int main(int argc, char** argv) {
 
     // Generar 3 caches
     Cache* cachePool[3];
-    cachePool[0] = newCache(20); // Algoritmo 1: Armstrong
-    cachePool[1] = newCache(20); // Algoritmo 2: Euler
-    cachePool[2] = newCache(20); // Algoritmo 3: Configuracion electronica
+    cachePool[0] = newCache(20, "lfu"); // Algoritmo 1: Armstrong
+    cachePool[1] = newCache(20, "lfu"); // Algoritmo 2: Euler
+    cachePool[2] = newCache(20, "lfu"); // Algoritmo 3: Configuracion electronica
 
     int i;
     Query* query;
@@ -44,17 +44,17 @@ int main(int argc, char** argv) {
         noQueriesLeft = 1;
         break; // dejar de hacer dispatch
       }
-      result = searchQuery(cachePool[query->algorithm-1],query->param);
+      result = searchQuery(cachePool[query->algorithm-1],query->algorithm,query->param);
 
       // Cache hit
       if(result != NULL){
-        printf("Resultado en cache: %ld->%s\n",query->param,result);
+        //printf("Resultado en cache: %ld->%s\n",query->param,result);
         query->result = result;
       }
 
       // Cache miss
       else{
-        printf("Enviando tarea param:%ld worker:%i algo:%i\n",query->param,i,query->algorithm);
+        //printf("Enviando tarea param:%ld worker:%i algo:%i\n",query->param,i,query->algorithm);
         MPI_Send(&query->param,1,MPI_LONG,i,query->algorithm,MPI_COMM_WORLD);
         setQueryDispatch(query);
         i++; // subir contador solo al despachar
@@ -97,7 +97,7 @@ int main(int argc, char** argv) {
       setQueriesResult(queries, queryParam, result);
 
       // guardar resultado en cache
-      saveResult(cachePool[status.MPI_TAG-1], queryParam, result);
+      saveResult(cachePool[status.MPI_TAG-1], status.MPI_TAG, queryParam, result);
       
       // Despachar la siguiente tarea
       while(noQueriesLeft == 0){ // solo si quedan queries sin respuesta
@@ -109,17 +109,17 @@ int main(int argc, char** argv) {
         }
 
         //buscar en cache
-        result = searchQuery(cachePool[query->algorithm-1],query->param);
+        result = searchQuery(cachePool[query->algorithm-1],query->algorithm,query->param);
         
         // Cache hit
         if(result != NULL){
-          printf("Resultado en cache: %ld->%s\n",query->param,result);
+          //printf("Resultado en cache: %ld->%s\n",query->param,result);
           query->result = result;
         }
 
         // Cache miss
         else{
-          printf("Enviando tarea param:%ld worker:%i algo:%i\n",query->param,i,query->algorithm);
+          //printf("Enviando tarea param:%ld worker:%i algo:%i\n",query->param,i,query->algorithm);
           MPI_Send(&query->param,1,MPI_LONG,status.MPI_SOURCE,query->algorithm,MPI_COMM_WORLD);
           setQueryDispatch(query);
           break; // solo despachar una query a la vez
@@ -127,10 +127,11 @@ int main(int argc, char** argv) {
       }
     }
 
-    printCache(cachePool[0]);
-    printCache(cachePool[1]);
-    printCache(cachePool[2]);
-    //writeResults("salida.out", queries);
+    printCachePerformance(cachePool[0]);
+    printCachePerformance(cachePool[1]);
+    printCachePerformance(cachePool[2]);
+
+    writeResults("salida.out", queries);
 
     // Parar workers
     for(i=1;i<world_size;i++){

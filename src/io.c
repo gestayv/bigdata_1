@@ -45,19 +45,29 @@ QueryList* readQueries(char* filename){
   return list;
 }
 
-void writeResults(char* filename, QueryList* queries){ // agregar resultado 1 a 1 o completo???
+void writeResults(char* filename, QueryList* queries){ 
+  FILE* file = fopen(filename,"w");
   QueryListNode *aux;
 	if(queries == NULL) return;
 
+  char* param = (char*) malloc(12*sizeof(char));
 	aux = queries->first;
 	while(aux != NULL){
-    printf("%s %i %ld %s\n",
+    if(aux->data->algorithm == 3){
+      param = getElement(aux->data->param);
+    }else{
+      sprintf(param, "%ld", aux->data->param);
+    }
+
+    fprintf(file,"UUID:%s ALGORITHM:%i PARAM:%s RESULT:%s\n",
     aux->data->uuid,
     aux->data->algorithm,
-    aux->data->param,
+    param,
     aux->data->result);
 
     aux = aux->next;
 	}
+
+  fclose(file);
   return;
 }

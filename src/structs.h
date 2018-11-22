@@ -38,6 +38,7 @@ void printQueries(QueryList* list);
 
 // CACHE
 typedef struct{
+  int algorithm;
   long query;
   char* result;
   int hits;
@@ -47,11 +48,15 @@ typedef struct{
 typedef struct{
   CacheEntry* entries;
   int size;
+  char* eviction;
+  long hits;
+  long misses;
 }Cache;
 
-Cache* newCache(int size);
-char* searchQuery(Cache* cache, long query);
-Cache* saveResult(Cache* cache, long query, char* result);
+Cache* newCache(int size, char* eviction);
+char* searchQuery(Cache* cache, int algorithm, long query);
+Cache* saveResult(Cache* cache, int algorithm, long query, char* result);
+void printCachePerformance(Cache* cache);
 void printCache(Cache* cache);
 
 
